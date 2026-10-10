@@ -5,3 +5,5 @@ dist/
 *.log
 orders.json*
 site-orders.json
+
+site-access.bin*

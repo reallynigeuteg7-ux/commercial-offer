@@ -129,11 +129,11 @@ document.addEventListener('keydown', event => { if (event.ctrlKey && event.key.t
 void run(async () => { const data = await api.init(); ({orders,blank,sidingRows} = data); load(blank); siteOrders = await api.siteCache(); renderList(); try { await refreshSite(); } catch { /* Local and cached orders remain available. */ } });
 
 async function refreshSite(loginPassword) {
-  await saveCurrent();
   $('#site-status').textContent = 'Загрузка заказов…';
-  try { siteOrders = loginPassword ? await api.siteLogin(loginPassword) : await api.siteSync(); renderList(); $('#site-status').textContent = 'Заказов сайта: ' + siteOrders.length; $('#site-login').hidden = true; }
-  catch(e) { $('#site-status').textContent = e.message; throw e; }
+  try { siteOrders = loginPassword ? await api.siteLogin(loginPassword) : await api.siteSync(); renderList(); $('#site-status').textContent = 'Подключено · Заказов сайта: ' + siteOrders.length; $('#site-login').hidden = true; }
+  catch(e) { $('#site-status').textContent = e.message; if (e.code === 'AUTH_REQUIRED') $('#site-login').hidden = false; throw e; }
 }
-$('#connect').addEventListener('click', () => { $('#site-login').hidden = !$('#site-login').hidden; if (!$('#site-login').hidden) $('#site-password').focus(); });
 $('#sync').addEventListener('click', () => run(() => refreshSite()));
 $('#site-login').addEventListener('submit', event => { event.preventDefault(); const password = $('#site-password').value; $('#site-password').value = ''; void run(() => refreshSite(password)); });
+setInterval(() => { if (!busy && $('#site-login').hidden) void refreshSite().catch(() => {}); }, 60000);
+window.addEventListener('online', () => { if ($('#site-login').hidden) void refreshSite().catch(() => {}); });

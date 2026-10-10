@@ -1,9 +1,9 @@
-import { app, BrowserWindow, ipcMain, dialog, protocol, session, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, protocol, session, shell, safeStorage } from 'electron';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createStore, blankDocument } from './store.mjs';
 import { quoteXls } from './document-xls.mjs';
-import { syncSite } from './site.mjs';
+import { connectedSite } from './site.mjs';
 import { sidingRows } from '../lib/crm/documents.mjs';
 
 app.setName('Facade Documents');
@@ -21,6 +21,8 @@ if (locked) app.whenReady().then(async () => {
   const store = createStore(directory);
   const cacheFile = path.join(directory, 'site-orders.json');
   const siteSession = session.fromPartition('persist:facade-site');
+  await fs.mkdir(directory, { recursive: true });
+  const connection = connectedSite(siteSession, cacheFile, path.join(directory, 'site-access.bin'), safeStorage);
   const assets = path.join(app.getAppPath(), 'ui');
   const allowed = new Map([['/index.html', 'text/html; charset=utf-8'], ['/app.js', 'text/javascript; charset=utf-8'], ['/style.css', 'text/css; charset=utf-8'], ['/logo.svg', 'image/svg+xml']]);
   protocol.handle('facade', async request => {
@@ -42,17 +44,12 @@ if (locked) app.whenReady().then(async () => {
   const handle = (name, callback) => ipcMain.handle(`documents:${name}`, async (event, ...args) => {
     if (event.senderFrame !== window.webContents.mainFrame || event.senderFrame.url !== 'facade://local/index.html') throw Error('Запрос отклонён.');
     try { return { ok: true, value: await callback(...args) }; }
-    catch (e) { return { ok: false, error: e.message || 'Не удалось выполнить действие.' }; }
+    catch (e) { return { ok: false, error: e.message || 'Не удалось выполнить действие.', code: e.code }; }
   });
   handle('init', async () => ({ orders: await store.list(), blank: blankDocument(), sidingRows, dataPath: directory }));
   handle('site-cache', async () => { try { return JSON.parse(await fs.readFile(cacheFile, 'utf8')); } catch (e) { if (e.code === 'ENOENT') return []; throw e; } });
-  handle('site-sync', () => syncSite(siteSession, cacheFile));
-  handle('site-login', async password => {
-    if (typeof password !== 'string' || !password || password.length > 256) throw Error('Введите пароль администратора сайта.');
-    const response = await siteSession.fetch('https://facade-kazahstan.vercel.app/api/auth/login', { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(20000), headers: { 'Content-Type': 'application/json', Origin: 'https://facade-kazahstan.vercel.app' }, body: JSON.stringify({ password }) });
-    if (!response.ok) { const data = await response.json(); throw Error(data.error || 'Не удалось войти.'); }
-    return syncSite(siteSession, cacheFile);
-  });
+  handle('site-sync', () => connection.sync());
+  handle('site-login', password => connection.login(password));
   handle('save', input => store.save(input));
   handle('list', () => store.list());
   handle('export', async ({ document, kind }) => {

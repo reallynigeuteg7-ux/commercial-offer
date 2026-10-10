@@ -3,7 +3,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 const invoke = async (name, value) => {
   const response = await ipcRenderer.invoke(`documents:${name}`, value);
-  if (!response.ok) throw new Error(response.error);
+  if (!response.ok) throw Object.assign(new Error(response.error), { code: response.code });
   return response.value;
 };
 contextBridge.exposeInMainWorld('documents', {
