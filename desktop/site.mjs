@@ -15,58 +15,22 @@ export function siteOrders(leads) {
       createdAt: lead.created_at || '', updatedAt: lead.updated_at || lead.created_at || '', document: documentDefaults(lead, positions) };
   });
 }
-export async function syncSite(siteSession, cacheFile) {
-  const response = await siteSession.fetch('https://facade-kazahstan.vercel.app/api/crm?export=backup', { redirect: 'error', signal: AbortSignal.timeout(20000) });
-  if (response.status === 403 || response.status === 401) throw Object.assign(Error('Введите пароль администратора для первого входа.'), { code: 'AUTH_REQUIRED' });
+export async function syncSite(siteSession, cacheFile, token) {
+  if (typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token)) throw Error('Эта сборка не настроена для заказов сайта. Установите последнюю версию приложения.');
+  const response = await siteSession.fetch('https://facade-kazahstan.vercel.app/api/desktop/orders', { redirect: 'error', signal: AbortSignal.timeout(20000), headers: { Authorization: 'Bearer ' + token } });
+  if (response.status === 403 || response.status === 401) throw Error('Доступ этой версии приложения обновлён. Установите последнюю сборку.');
   if (!response.ok) throw Error('Сайт временно недоступен. Сохранённые заказы остаются доступны.');
   const data = await response.json();
-  const orders = siteOrders(data.crm_leads);
-  await fs.writeFile(cacheFile, JSON.stringify(orders), 'utf8');
+  const orders = siteOrders(data.orders);
+  await fs.writeFile(cacheFile + '.tmp', JSON.stringify(orders), 'utf8');
+  await fs.rename(cacheFile + '.tmp', cacheFile);
   return orders;
 }
-
-export function connectedSite(siteSession, cacheFile, credentialFile, storage) {
-  const origin = 'https://facade-kazahstan.vercel.app';
-  let pending, authBlocked = false;
-  async function authenticate(password, remember) {
-    if (typeof password !== 'string' || !password || password.length > 256) throw Error('Введите пароль администратора сайта.');
-    if (remember && !storage.isEncryptionAvailable()) throw Error('Windows не может защитить данные входа.');
-    const response = await siteSession.fetch(origin + '/api/auth/login', { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(20000), headers: { 'Content-Type': 'application/json', Origin: origin }, body: JSON.stringify({ password }) });
-    if (!response.ok) {
-      const data = await response.json();
-      if ([401, 429].includes(response.status)) authBlocked = true;
-      throw Object.assign(Error(data.error || 'Не удалось войти.'), { code: [401, 429].includes(response.status) ? 'AUTH_REQUIRED' : 'NETWORK' });
-    }
-    if (remember) {
-      await fs.writeFile(credentialFile + '.tmp', storage.encryptString(password));
-      await fs.rename(credentialFile + '.tmp', credentialFile);
-    }
-    authBlocked = false;
-    await siteSession.cookies.flushStore();
-  }
-  return {
-    async login(password) {
-      if (pending) await pending.catch(() => {});
-      await authenticate(password, true);
-      return syncSite(siteSession, cacheFile);
-    },
-    sync() {
-      if (pending) return pending;
-      pending = (async () => {
-        try { return await syncSite(siteSession, cacheFile); }
-        catch (e) {
-          if (e.code !== 'AUTH_REQUIRED') throw e;
-          if (authBlocked) throw e;
-          let password;
-          try {
-            if (!storage.isEncryptionAvailable()) throw Error();
-            password = storage.decryptString(await fs.readFile(credentialFile));
-          } catch { throw e; }
-          await authenticate(password, false);
-          return syncSite(siteSession, cacheFile);
-        }
-      })().finally(() => { pending = null; });
-      return pending;
-    },
-  };
+export function connectedSite(siteSession, cacheFile, token) {
+  let pending;
+  return { sync() {
+    if (pending) return pending;
+    pending = syncSite(siteSession, cacheFile, token).finally(() => { pending = null; });
+    return pending;
+  } };
 }

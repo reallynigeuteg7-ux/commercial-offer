@@ -128,12 +128,11 @@ api.onBeforeClose(() => run(async () => { await saveCurrent(); await api.close()
 document.addEventListener('keydown', event => { if (event.ctrlKey && event.key.toLowerCase() === 's') { event.preventDefault(); void run(async () => { dirty = true; await saveCurrent(); }); } });
 void run(async () => { const data = await api.init(); ({orders,blank,sidingRows} = data); load(blank); siteOrders = await api.siteCache(); renderList(); try { await refreshSite(); } catch { /* Local and cached orders remain available. */ } });
 
-async function refreshSite(loginPassword) {
+async function refreshSite() {
   $('#site-status').textContent = 'Загрузка заказов…';
-  try { siteOrders = loginPassword ? await api.siteLogin(loginPassword) : await api.siteSync(); renderList(); $('#site-status').textContent = 'Подключено · Заказов сайта: ' + siteOrders.length; $('#site-login').hidden = true; }
-  catch(e) { $('#site-status').textContent = e.message; if (e.code === 'AUTH_REQUIRED') $('#site-login').hidden = false; throw e; }
+  try { siteOrders = await api.siteSync(); renderList(); $('#site-status').textContent = 'Подключено · Заказов сайта: ' + siteOrders.length; }
+  catch(e) { $('#site-status').textContent = e.message; throw e; }
 }
 $('#sync').addEventListener('click', () => run(() => refreshSite()));
-$('#site-login').addEventListener('submit', event => { event.preventDefault(); const password = $('#site-password').value; $('#site-password').value = ''; void run(() => refreshSite(password)); });
-setInterval(() => { if (!busy && $('#site-login').hidden) void refreshSite().catch(() => {}); }, 60000);
-window.addEventListener('online', () => { if ($('#site-login').hidden) void refreshSite().catch(() => {}); });
+setInterval(() => { if (!busy) void refreshSite().catch(() => {}); }, 60000);
+window.addEventListener('online', () => { void refreshSite().catch(() => {}); });

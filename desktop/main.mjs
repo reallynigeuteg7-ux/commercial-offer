@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, protocol, session, shell, safeStorage } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, protocol, session, shell } from 'electron';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createStore, blankDocument } from './store.mjs';
@@ -8,6 +8,8 @@ import { sidingRows } from '../lib/crm/documents.mjs';
 
 app.setName('Facade Documents');
 app.setAppUserModelId('kz.facade.documents');
+const profileDirectory = app.commandLine.getSwitchValue('user-data-dir');
+if (profileDirectory) app.setPath('userData', path.resolve(profileDirectory));
 protocol.registerSchemesAsPrivileged([{ scheme: 'facade', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 const locked = app.requestSingleInstanceLock();
 if (!locked) app.quit();
@@ -22,7 +24,8 @@ if (locked) app.whenReady().then(async () => {
   const cacheFile = path.join(directory, 'site-orders.json');
   const siteSession = session.fromPartition('persist:facade-site');
   await fs.mkdir(directory, { recursive: true });
-  const connection = connectedSite(siteSession, cacheFile, path.join(directory, 'site-access.bin'), safeStorage);
+  const { token } = JSON.parse(await fs.readFile(path.join(app.getAppPath(), 'connection.json'), 'utf8'));
+  const connection = connectedSite(siteSession, cacheFile, token);
   const assets = path.join(app.getAppPath(), 'ui');
   const allowed = new Map([['/index.html', 'text/html; charset=utf-8'], ['/app.js', 'text/javascript; charset=utf-8'], ['/style.css', 'text/css; charset=utf-8'], ['/logo.svg', 'image/svg+xml']]);
   protocol.handle('facade', async request => {
@@ -49,7 +52,6 @@ if (locked) app.whenReady().then(async () => {
   handle('init', async () => ({ orders: await store.list(), blank: blankDocument(), sidingRows, dataPath: directory }));
   handle('site-cache', async () => { try { return JSON.parse(await fs.readFile(cacheFile, 'utf8')); } catch (e) { if (e.code === 'ENOENT') return []; throw e; } });
   handle('site-sync', () => connection.sync());
-  handle('site-login', password => connection.login(password));
   handle('save', input => store.save(input));
   handle('list', () => store.list());
   handle('export', async ({ document, kind }) => {

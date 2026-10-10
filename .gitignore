@@ -7,3 +7,6 @@ orders.json*
 site-orders.json
 
 site-access.bin*
+
+.local/
+connection.json

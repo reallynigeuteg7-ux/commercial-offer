@@ -7,7 +7,7 @@ const invoke = async (name, value) => {
   return response.value;
 };
 contextBridge.exposeInMainWorld('documents', {
-  siteCache: () => invoke('site-cache'), siteSync: () => invoke('site-sync'), siteLogin: password => invoke('site-login', password),
+  siteCache: () => invoke('site-cache'), siteSync: () => invoke('site-sync'),
   init: () => invoke('init'), save: value => invoke('save', value), list: () => invoke('list'),
   export: value => invoke('export', value), openExport: file => invoke('open-export', file),
   backup: () => invoke('backup'), import: () => invoke('import'), folder: () => invoke('folder'), close: () => invoke('close'),
