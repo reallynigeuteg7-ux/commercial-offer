@@ -1,0 +1,7 @@
+node_modules/
+desktop/dist/
+dist/
+.env*
+*.log
+orders.json*
+site-orders.json

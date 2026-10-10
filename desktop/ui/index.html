@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Facade — КП и ПП</title><link rel="stylesheet" href="style.css"><script src="app.js" defer></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand"><img src="logo.svg" alt="Facade Kazakhstan"><div>FACADE<span>ДОКУМЕНТЫ</span></div></div>
+    <button class="primary new-order" id="new">＋ Новый заказ</button>
+    <button id="connect">Подключить сайт</button><button id="sync">Обновить заказы сайта</button><p id="site-status" role="status"></p><form id="site-login" hidden><label>Пароль администратора сайта<input id="site-password" type="password" autocomplete="current-password"></label><button type="submit">Войти</button></form><label class="search"><span class="sr-only">Поиск заказов</span><input id="search" placeholder="Поиск по клиенту или заказу"></label>
+    <div class="list-title">Сохранённые заказы <span id="count">0</span></div>
+    <nav id="orders" aria-label="Сохранённые заказы"></nav>
+    <div class="sidebar-bottom"><span class="offline">Локальные заказы доступны без интернета</span><button id="backup">Сохранить резервную копию</button><button id="import">Добавить из резервной копии</button><button id="folder">Открыть папку данных ↗</button></div>
+  </aside>
+  <main>
+    <header class="topbar"><div><span class="eyebrow">КОММЕРЧЕСКИЕ И ЦЕНОВЫЕ ПРЕДЛОЖЕНИЯ</span><h1 id="page-title">Новый заказ</h1></div><div class="save-tools"><span id="save-status" role="status">Готов к заполнению</span><button id="duplicate">Создать копию</button><button id="save">Сохранить</button></div></header>
+    <div id="notice" role="alert" hidden></div>
+    <form id="editor" novalidate>
+      <section class="panel"><div class="panel-heading"><h2>Данные заказа</h2><label class="preset">Начать с шаблона <select id="preset"><option value="">Выбрать</option><option value="bench">Скамейка + урна</option><option value="siding">Сайдинг</option></select></label></div>
+        <div class="fields"><label class="wide">Название заказа<input name="title" maxlength="600" placeholder="Например, скамейки для парка"></label><label>Номер<input name="number" maxlength="100"></label><label>Дата<input name="date" type="date"></label><label class="half">Клиент / организация<input name="recipient" maxlength="600" placeholder="Название компании или имя"></label><label class="half">Телефон<input name="phone" maxlength="100" placeholder="+7 ..."></label></div>
+      </section>
+      <section class="panel"><div class="panel-heading"><h2>Товары и работы</h2><button type="button" id="add">＋ Добавить позицию</button></div>
+        <div class="pricing-options"><label>Расчёт<select name="pricing"><option value="lines">Цена каждой позиции</option><option value="package">Общая цена за комплект</option></select></label><label>НДС<select name="vat"><option value="included">Цены с НДС</option><option value="without">Цены без НДС</option><option value="unspecified">Не указывать</option></select></label><label id="package-field" hidden>Цена комплекта, ₸<input name="packagePrice" inputmode="decimal" placeholder="0,00"></label></div>
+        <div class="table-wrap"><table><thead><tr><th>Наименование / размеры и примечания</th><th>Ед. изм.</th><th>Количество</th><th>Цена, ₸</th><th>Сумма, ₸</th><th><span class="sr-only">Действие</span></th></tr></thead><tbody id="items"></tbody></table></div>
+        <div class="total-line"><span id="item-count"></span><div><span id="total-label">Итого с НДС</span><strong id="total">—</strong><span>₸</span></div></div>
+      </section>
+      <section class="panel"><div class="panel-heading"><h2>Поставщик и условия</h2><span class="hint">Условия включаются в КП</span></div><div class="fields"><label class="half">Поставщик<input name="supplier" maxlength="600"></label><label class="half">Срок изготовления<input name="deadline" maxlength="600" placeholder="Например, 15 рабочих дней"></label><label class="half">Доставка / адрес<input name="delivery" maxlength="600"></label><label class="half">Условия оплаты<input name="payment" maxlength="600" placeholder="Например, предоплата 50%"></label><label class="half">Срок действия предложения<input name="validity" maxlength="600" placeholder="Например, 10 дней"></label><label class="half">Реквизиты<textarea name="requisites" maxlength="3000" rows="2"></textarea></label><label class="wide">Примечание к КП и ПП<textarea name="notes" maxlength="3000" rows="2"></textarea></label></div></section>
+    </form>
+    <footer class="export-bar"><div><strong>Документы по вашему шаблону</strong><span>Excel · XLS · с логотипом компании</span></div><div class="export-buttons"><button class="secondary" id="pp">Скачать ПП <span>Ценовое предложение</span></button><button class="primary" id="kp">Скачать КП <span>Коммерческое предложение</span></button></div></footer>
+  </main>
+  <div id="exported" hidden role="status"><div><strong>Документ сохранён</strong><span id="export-name"></span></div><button id="open-export">Открыть в Excel ↗</button><button id="dismiss-export" aria-label="Закрыть уведомление">×</button></div>
+  <datalist id="units"><option value="шт"><option value="м²"><option value="м"><option value="пог.м"><option value="компл"><option value="упаковка"><option value="рулон"></datalist>
+</body></html>

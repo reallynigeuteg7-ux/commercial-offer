@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { siteOrders, syncSite } from './site.mjs';
+const rows=[{id:'a',order_group:'g',product:'Скамейка',name:'Клиент',phone:'+7',quantity:'2 шт',amount:2000,size:'1800',stage:'new'},{id:'b',order_group:'g',product:'Урна',quantity:'1',amount:500},{id:'c',product:'Архив',stage:'archived'}];
+const result=siteOrders(rows);assert.equal(result.length,2);assert.equal(result[0].document.items.length,2);assert.equal(result[0].document.items[0].price,'1000.00');assert.equal(result[1].stage,'archived');
+const dir=await fs.mkdtemp(path.join(os.tmpdir(),'facade-sync-'));const cache=path.join(dir,'cache.json');
+const session={fetch:async()=>({ok:true,status:200,json:async()=>({crm_leads:rows})})};
+await syncSite(session,cache);assert.equal(JSON.parse(await fs.readFile(cache,'utf8')).length,2);
+await assert.rejects(syncSite({fetch:async()=>({status:403})},cache),/Войдите/);
+assert.equal(JSON.parse(await fs.readFile(cache,'utf8')).length,2);
+console.log('PASS: grouped orders, amounts, archived orders, cache and denied access.');
