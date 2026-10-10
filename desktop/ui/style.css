@@ -3,3 +3,5 @@
 #site-status{font-size:11px;line-height:1.45;margin:0;color:#687653}#site-login{display:grid;gap:8px}#site-login label{font-size:12px}#orders{min-height:90px}.sidebar{gap:12px}
 
 .brand img{background:#263220;border-radius:10px;padding:8px}
+
+.brand{gap:10px}.brand img{width:100px;height:100px;padding:4px;flex-shrink:0}.brand div{font-size:18px}.brand span{letter-spacing:1.7px}@media(max-width:1150px){.brand{gap:8px}.brand div{font-size:16px;letter-spacing:1px}}
