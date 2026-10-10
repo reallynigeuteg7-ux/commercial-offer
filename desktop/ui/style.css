@@ -7,3 +7,4 @@
 .brand{gap:10px}.brand img{width:100px;height:100px;padding:4px;flex-shrink:0}.brand div{font-size:18px}.brand span{letter-spacing:1.7px}@media(max-width:1150px){.brand{gap:8px}.brand div{font-size:16px;letter-spacing:1px}}
 
 .brand img{background:transparent;border-radius:0;padding:0}
+.brand .brand-country{color:#252a22;font-size:12px;letter-spacing:1px;margin-top:3px;font-weight:650}
